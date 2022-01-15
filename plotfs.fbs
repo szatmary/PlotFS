@@ -1,0 +1,34 @@
+// flatc --cpp --gen-object-api plotfs.fbs 
+
+table Device {
+    path:string;
+    id:[ubyte];
+    begin:uint64;
+    end:uint64;
+}
+
+table Shard {
+    device_id:[ubyte];
+    begin:uint64;
+    end:uint64;
+}
+
+enum PlotFlags: uint64  {
+    Empty = 0,
+    Reserved = 1,
+    Hidden = 2,
+}
+
+table Plot {
+    id:[ubyte];
+    k:uint8;
+    shards:[Shard];
+    flags:PlotFlags = Empty;
+}
+
+table Geometry {
+    devices:[Device];
+    plots:[Plot];
+}
+
+root_type Geometry;
