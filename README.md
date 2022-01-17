@@ -1,10 +1,11 @@
 # PlotFS
 a fuse filesystem for efficiently storage of Chia plot files
 
-PlotFS is not a traditional filesystem. It is mounted read only for compatiability 
-with farming/harvesting. Adding/removing plotis is achieved via the `plotfs` command line tool.
+PlotFS is not a traditional filesystem. It is mounted read only for compatiability with farming/harvesting. 
 
-PlotFS writes Chia plot files directly and contiguously to a raw block devices or partations.
+Any other interaction such as ading/removing plotis is achieved via the `plotfs` command line tool.
+
+PlotFS writes Chia plot files directly and contiguously to a raw block devices, partations, or files.
 Metadata, such as plot file locations and size are recorded in a separate "geomotroy" file stored on the OS drive. Plots can be split into "shards" and spread across mutipule disks to achieve maximum storage density.
 
 # WARNING
@@ -12,8 +13,8 @@ This software is beta quality... at best. Use at your own risk.
 The author is not responsible for any lost data that may occur.
 
 ### Project Goals
-Modern file systems, while amazing, are not really suited for storing Chia plots.
-A filesystem designed for chia has much different usage pattern. It must:
+Modern file systems, while amazing, have some drawbacks when storing Chia plots.
+A filesystem designed specifically for chia has much different usage pattern. It must:
 
 * Have zero (or close to zero) space overhead
 * Maintain operation upon the failure of any number of disks
@@ -35,41 +36,44 @@ It doesn't care about:
 ### Installing
 Ubuntu:
 
+    apt update && apt -y upgrade
+    apt install -y git cmake build-essential pkg-config libfuse3-dev libflatbuffers-dev
+
 Raspberry Pi:
-TODO
+    TODO
 
 ### Getting started
 
 Create a place to store our geomotry file
-    $ sudo mkdir -p /var/local/plotfs
-    $ sudo chown $USER /var/local/plotfs
+    sudo mkdir -p /var/local/plotfs
+    sudo chown $USER /var/local/plotfs
 
 Create the geomotry file
-    $ plotfs --init
+    plotfs --init
 
 This will create a file in `/var/local/plotfs/plotfs.bin`
 Note: It is VERY important that you back up this file! if you loose this file, you loose your plots!
 (It may be possible to rebuild this file later by scanning the dirves/partitions But I have not yet written ta tool to do that)
 
 Create a mount point
-    $ sudo mkdir /farm
+    sudo mkdir /farm
 
 Mount the filesystem:
-    $ sudo mount.plotfs /farm
+    sudo mount.plotfs /farm
 
 Add this directory to chia client. Use the GUI or from yor chia install directory run: 
-    $  . ./activate && chia plots add -d /farm
+     . ./activate && chia plots add -d /farm
 
 Add a disk or partition to the plotfs pool. Repeat for mutipule disks/partitions. Pools can be expanded at at time by adding more disks/partitions.
-    $ chiafs --add-device /dev/disk/by-id/[your disk or partition]
+    chiafs --add-device /dev/disk/by-id/[your disk or partition]
 
 Optional: Configure the filesystem to mount at boot. My personal favorite approach is using cron.
-    $ sudo crontab -e
+    sudo crontab -e
 Add the line
     @reboot mount.plotfs /farm
 
 Start adding plots:
-    $ sudo plotfs --add-plot /path/to/plot.chia
+    sudo plotfs --add-plot /path/to/plot.chia
 
 ## plotfs CLI usage
 

@@ -7,9 +7,7 @@ set(CMAKE_CXX_FLAGS ${CMAKE_C_FLAGS})
 
 find_package(PkgConfig REQUIRED) 
 find_library(FUSE3_LIBRARY fuse3)
-find_package_handle_standard_args(FUSE3 REQUIRED_VARS FUSE3_LIBRARY FUSE3_INCLUDE_DIR VERSION_VAR FUSE3_VERSION_STRING)
-
-find_library(FUSE3_LIBRARY fuse3)
+find_package_handle_standard_args(FUSE3 REQUIRED_VARS FUSE3_LIBRARY VERSION_VAR FUSE3_VERSION_STRING)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/plotfs_generated.h
