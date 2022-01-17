@@ -219,7 +219,7 @@ static int read(const char* path, char* buf, size_t size, off_t offset, struct f
         }
 
         // Read the data
-        auto read = std::min(size, shard_size - offset);
+        auto read = std::min(static_cast<uint64_t>(size), shard_size - offset);
         read = device->read(reinterpret_cast<uint8_t*>(buf), read);
         buf += read, size -= read, offset = 0;
     }
