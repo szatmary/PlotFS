@@ -82,11 +82,11 @@ Optional: Configure the filesystem to mount at boot. My personal favorite approa
     sudo crontab -e
 Add the line
 
-    @reboot mount.plotfs /farm
+    @reboot /usr/local/bin/mount.plotfs /farm
 
 Start adding plots:
 
-    sudo plotfs --add_plot /path/to/plot.chia
+    sudo plotfs --add_plot /path/to/[plot file.plot]
 
 ## plotfs CLI usage
 
