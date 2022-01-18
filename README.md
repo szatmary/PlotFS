@@ -3,7 +3,7 @@ PlotFS is a fuse filesystem for efficient storage of Chia plot files.
 
 PlotFS is not a traditional filesystem. It is mounted read only for farming/harvesting, but all other interactions, such as adding/removing plots, is achieved via the `plotfs` command line tool.
 
-PlotFS writes plot files directly and contiguously to raw block devices, partations, or files.
+PlotFS writes plot files directly and contiguously to raw block devices, partitions, or files.
 Metadata, such as, file offsets and size are recorded in a separate "geometry" file which is stored on the OS drive. Plots can be split into "shards" and spread across multiple disks to achieve maximum storage density.
 
 Please consider dontating:
@@ -133,7 +133,7 @@ Q. Wow this is great! How can I give you all my Chia?
 
 A. xch1hsyyclxn2v59ysd4n8nk577sduw64sg90nr8z26c3h8emq7magdqqzq9n5
 
-Q. Will this work on Rasperrry Pi?
+Q. Will this work on Raspberry Pi?
 
 A. I haven't tested yet, but it should. If it doesn't let me know, I'll fix it.
 
