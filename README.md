@@ -4,7 +4,7 @@ PlotFS is a fuse filesystem for efficiently storage of Chia plot files
 PlotFS is not a traditional filesystem. It is mounted read only for farming/harvesting, But all other interactions, such as ading/removing plots, is achieved via the `plotfs` command line tool.
 
 PlotFS writes plot files directly and contiguously to a raw block devices, partations, or files.
-Metadata such as file offsets and size are recorded in a separate "geometry" file which is stored on the OS drive. Plots can be split into "shards" and spread across mutipule disks to achieve maximum storage density.
+Metadata such as file offsets and size are recorded in a separate "geometry" file which is stored on the OS drive. Plots can be split into "shards" and spread across multiple disks to achieve maximum storage density.
 
 Please concider dontating:
 
@@ -15,7 +15,7 @@ This software is beta quality... at best. Use at your own risk.
 The author is not responsible for any lost data that may occur.
 
 # Project Goals
-Modern file systems, while amazing, have some drawbacks when storing Chia plots.
+Modern file systems, while amazing, all have some drawbacks when storing Chia plots.
 A filesystem designed specifically for plots will have a much different usage pattern. It must:
 
 * Have zero (or close to zero) space overhead
