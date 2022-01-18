@@ -5,8 +5,12 @@ PlotFS is not a traditional filesystem. It is mounted read only for compatiabili
 
 Any other interaction such as ading/removing plotis is achieved via the `plotfs` command line tool.
 
-PlotFS writes Chia plot files directly and contiguously to a raw block devices, partations, or files.
-Metadata, such as plot file locations and size are recorded in a separate "geomotroy" file stored on the OS drive. Plots can be split into "shards" and spread across mutipule disks to achieve maximum storage density.
+PlotFS writes plot files directly and contiguously to a raw block devices, partations, or files.
+Metadata, such as file offsets and size are recorded in a separate "geometry" file stored on the OS drive. Plots can be split into "shards" and spread across mutipule disks to achieve maximum storage density.
+
+Please concider dontating:
+
+    xch1hsyyclxn2v59ysd4n8nk577sduw64sg90nr8z26c3h8emq7magdqqzq9n5
 
 # WARNING
 This software is beta quality... at best. Use at your own risk. 
@@ -14,7 +18,7 @@ The author is not responsible for any lost data that may occur.
 
 ### Project Goals
 Modern file systems, while amazing, have some drawbacks when storing Chia plots.
-A filesystem designed specifically for chia has much different usage pattern. It must:
+A filesystem designed specifically for plots has much different usage pattern. It must:
 
 * Have zero (or close to zero) space overhead
 * Maintain operation upon the failure of any number of disks
@@ -34,22 +38,21 @@ It doesn't care about:
 * Humans in general
 
 ### Installing
-Ubuntu:
 
-    apt update && apt -y upgrade
-    apt install -y git cmake build-essential pkg-config libfuse3-dev libflatbuffers-dev
+    sudo apt update && sudo apt -y upgrade
+    sudo apt install -y git cmake build-essential pkg-config libfuse3-dev libflatbuffers-dev
+    git clone https://github.com/szatmary/PlotFS.git
+    cd PlotFS && cmake . && make && sudo make install
 
-Raspberry Pi:
-    TODO
 
 ### Getting started
 
-Create a place to store our geomotry file
+Create a place to store our geometry file
     
     sudo mkdir -p /var/local/plotfs
     sudo chown $USER /var/local/plotfs
 
-Create the geomotry file
+Create the geometry file
 
     plotfs --init
 
@@ -90,7 +93,7 @@ $ plotfs
 --init
 
     Initialize the plotfs filesystem. Creates a file at `/var/local/plotfs/plotfs.bin`. Back this file up!
-    combine with --force to clear the entire geomory file and start over.
+    combine with --force to clear the entire geometry file and start over.
 
 --list-devices
 
