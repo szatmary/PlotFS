@@ -57,7 +57,7 @@ Create the geometry file
 
 This will create the file `/var/local/plotfs/plotfs.bin`
 
-Note: It is VERY important that you back up this file! if you lose this file, you lose your plots!
+Note: It is VERY important that you back up this file frequently! if you lose this file, you lose your plots!
 (It may be possible to rebuild this file later by scanning the dirves/partitions But I have not written a tool to do that yet)
 
 Create a mount point
