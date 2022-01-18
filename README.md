@@ -1,5 +1,5 @@
 # PlotFS
-PLotFS is a fuse filesystem for efficiently storage of Chia plot files
+PlotFS is a fuse filesystem for efficiently storage of Chia plot files
 
 PlotFS is not a traditional filesystem. It is mounted read only for farming/harvesting, But all other interactions, such as ading/removing plots, is achieved via the `plotfs` command line tool.
 
