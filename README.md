@@ -18,7 +18,7 @@ The author is not responsible for any lost data that may occur.
 
 # Project Goals
 Modern file systems, while amazing, have some drawbacks when storing Chia plots.
-A filesystem designed specifically for plots has much different usage pattern. It must:
+A filesystem designed specifically for plots will have a much different usage pattern. It must:
 
 * Have zero (or close to zero) space overhead
 * Maintain operation upon the failure of any number of disks
