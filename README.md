@@ -72,7 +72,7 @@ Add this directory to chia client. Use the GUI; or from yor chia install directo
 
      . ./activate && chia plots add -d /farm
 
-Add a disk or partition to the plotfs pool. Repeat for mutipule disks/partitions. Pools can be expanded at at time by adding more disks/partitions.
+Add a disk or partition to the plotfs pool. Repeat for multiple disks/partitions. Pools can be expanded at any time by adding more disks/partitions.
 Note: This will erase the data on the disk/partition! 
 
     sudo chiafs --add_device /dev/disk/by-id/[your disk or partition]
@@ -89,6 +89,8 @@ Start adding plots:
     sudo plotfs --add_plot /path/to/plot.chia
 
 ## plotfs CLI usage
+
+$ plotfs 
 
 --init
 
@@ -119,7 +121,6 @@ Start adding plots:
 --remove_plot [plot id]
 
     Remove a plot from the filesystem.
-
 
 $ mount.plotfs [mount point]
 
