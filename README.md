@@ -136,7 +136,7 @@ Q. Will this work on rasperrry pi?
 
 A. I havent tested yet, but it should. If it doesn't let me know, I'll fix it.
 
-Q. Why do the filenmes not have the date?
+Q. Why do the filenames not have the date?
 
 A. plotfs does not have the concept of filenames. It uses the plot id and k value from the plot header as the file name. The plot header does not record the date created.
 
