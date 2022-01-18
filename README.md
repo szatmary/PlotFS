@@ -1,12 +1,10 @@
 # PlotFS
-a fuse filesystem for efficiently storage of Chia plot files
+PLotFS is a fuse filesystem for efficiently storage of Chia plot files
 
-PlotFS is not a traditional filesystem. It is mounted read only for compatiability with farming/harvesting. 
-
-Any other interaction such as ading/removing plots is achieved via the `plotfs` command line tool.
+PlotFS is not a traditional filesystem. It is mounted read only for farming/harvesting, But all other interactions, such as ading/removing plots, is achieved via the `plotfs` command line tool.
 
 PlotFS writes plot files directly and contiguously to a raw block devices, partations, or files.
-Metadata, such as file offsets and size are recorded in a separate "geometry" file stored on the OS drive. Plots can be split into "shards" and spread across mutipule disks to achieve maximum storage density.
+Metadata such as file offsets and size are recorded in a separate "geometry" file which is stored on the OS drive. Plots can be split into "shards" and spread across mutipule disks to achieve maximum storage density.
 
 Please concider dontating:
 
@@ -31,6 +29,7 @@ It doesn't care about:
 
 * Directories
 * Frequent deletes
+* Write performace
 * Large number of small files
 * Rendundency
 * Convenience
@@ -56,9 +55,10 @@ Create the geometry file
 
     plotfs --init
 
-This will create a file in `/var/local/plotfs/plotfs.bin`
-Note: It is VERY important that you back up this file! if you loose this file, you loose your plots!
-(It may be possible to rebuild this file later by scanning the dirves/partitions But I have not yet written ta tool to do that)
+This will create the file `/var/local/plotfs/plotfs.bin`
+
+Note: It is VERY important that you back up this file! if you lose this file, you lose your plots!
+(It may be possible to rebuild this file later by scanning the dirves/partitions But I have not written a tool to do that yet)
 
 Create a mount point
 
@@ -68,13 +68,14 @@ Mount the filesystem:
 
     sudo mount.plotfs /farm
 
-Add this directory to chia client. Use the GUI or from yor chia install directory run: 
+Add this directory to chia client. Use the GUI; or from yor chia install directory run: 
 
      . ./activate && chia plots add -d /farm
 
 Add a disk or partition to the plotfs pool. Repeat for mutipule disks/partitions. Pools can be expanded at at time by adding more disks/partitions.
+Note: This will erase the data on the disk/partition! 
 
-    chiafs --add_device /dev/disk/by-id/[your disk or partition]
+    sudo chiafs --add_device /dev/disk/by-id/[your disk or partition]
 
 Optional: Configure the filesystem to mount at boot. My personal favorite approach is using cron.
 
@@ -89,7 +90,6 @@ Start adding plots:
 
 ## plotfs CLI usage
 
-$ plotfs
 --init
 
     Initialize the plotfs filesystem. Creates a file at `/var/local/plotfs/plotfs.bin`. Back this file up!
@@ -141,8 +141,7 @@ A. plotfs does not have the concept of filenames. It uses the plot id and k valu
 
 Q. What happens when/if chia releases plot compression?
 
-A. You can compress a plot, then delete and add it back via the cli.. To minimize fragmentation its best to do this in a spacific order. I will document more if/when plot compression is available.
-
+A. You can compress a plot, then delete and add it back via the cli.. To minimize fragmentation its best to do this in a specific order. I will document more if/when plot compression is available.
 
 Q. I lost my config file! Can you release the recovery tool?
 
