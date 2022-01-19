@@ -43,6 +43,9 @@ It doesn't care about:
     git clone https://github.com/szatmary/PlotFS.git
     cd PlotFS && cmake . && make && sudo make install
 
+    Note: Ubuntu 20.04 has a verson of flatc that is too old. Update to a newer Ubuntu, or install flatbuffers from source.
+
+
 
 ### Getting started
 
