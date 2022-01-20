@@ -22,6 +22,10 @@ public:
     static std::shared_ptr<FileHandle> open(const std::string& path, int flags = O_RDONLY, mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
     {
         auto fd = ::open(path.c_str(), flags, mode);
+        if (fd < 0) {
+            std::cerr << "Failed to open " << path << " " << strerror(errno) << std::endl;
+            return nullptr;
+        }
         return std::make_shared<FileHandle>(fd);
     }
     virtual ~FileHandle() { close(); }

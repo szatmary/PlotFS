@@ -143,6 +143,7 @@ public:
             return false;
         }
         if (!fd->lock(LOCK_EX)) {
+            std::cerr << "Failed exclusive lock on file " << path << std::endl;
             return false;
         }
         if (fd->stat().st_size == 0 || force) {
@@ -152,6 +153,7 @@ public:
             auto data = fbb.GetBufferPointer();
             auto size = fbb.GetSize();
             if (!fd->write(data, size)) {
+                std::cerr << "Failed writing to geometry file" << std::endl;
                 return false;
             }
             fd->sync();
