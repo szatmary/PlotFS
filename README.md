@@ -43,8 +43,10 @@ It doesn't care about:
     git clone https://github.com/szatmary/PlotFS.git
     cd PlotFS && cmake . && make && sudo make install
 
-    Note: Ubuntu 20.04 has a verson of flatc that is too old. Update to a newer Ubuntu, or install flatbuffers from source.
+Note: Ubuntu 20.04 and earlier has a verson of flatc that is too old. Update to a newer Ubuntu (Which you really should do... Your farmer is not mission critical enterprise distributed infrastrcture, and  LTS does not mean its better support, It means its running old software but still gets security patches) Or, install flatbuffers from source.
 
+    sudo apt purge libflatbuffers-dev
+    git clone https://github.com/google/flatbuffers.git && cd flatbuffers && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release && make && make install
 
 
 ### Getting started
