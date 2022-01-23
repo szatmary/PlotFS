@@ -80,7 +80,7 @@ Add this directory to chia client. Use the GUI; or from yor chia install directo
 Add a disk or partition to the plotfs pool. Repeat for multiple disks/partitions. Pools can be expanded at any time by adding more disks/partitions.
 Note: This will erase the data on the disk/partition! 
 
-    sudo chiafs --add_device /dev/disk/by-id/[your disk or partition]
+    sudo plotfs --add_device /dev/disk/by-id/[your disk or partition]
 
 Optional: Configure the filesystem to mount at boot. My personal favorite approach is using cron.
 
