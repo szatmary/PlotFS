@@ -158,3 +158,7 @@ A. I haven't written it yet. PlotFS is just a side project and my day job keeps 
 Q. Windows when?
 
 A. Literally never. Use linux.
+
+Q. How can I get in contact with you?
+
+A. email: matt@szatmary.org twitter: @m3u8
