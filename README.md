@@ -48,6 +48,9 @@ Note: Ubuntu 20.04 and earlier has a verson of flatc that is too old. Update to 
     sudo apt purge libflatbuffers-dev
     git clone https://github.com/google/flatbuffers.git && cd flatbuffers && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release && make && make install
 
+### Updating
+
+    cd PlotFS && git pull && make && sudo make install
 
 ### Getting started
 
@@ -127,6 +130,10 @@ $ plotfs
 --remove_plot [plot id]
 
     Remove a plot from the filesystem.
+
+--remove_source
+
+    When used with --add_plot will remove the file located at [plot path] if the plot is added successfully.
 
 $ mount.plotfs [mount point]
 

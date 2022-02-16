@@ -33,8 +33,9 @@ int main(int argc, char** argv)
     auto list_plots_opt = app.add_flag("--list_plots", list_plots, "List all plots");
     auto list_devices_opt = app.add_flag("--list_devices", list_devices, "List all devices");
 
-    bool force = false;
+    bool force = false, remove_source = false;
     bool force_opt = app.add_flag("--force", force, "Force operation");
+    auto remove_source_opt = app.add_flag("--remove_source", remove_source, "Removes source plot file after adding");
 
     init_opt->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(list_devices_opt);
 
@@ -131,7 +132,23 @@ int main(int argc, char** argv)
             std::cerr << "Could not open plotfs" << std::endl;
             return EXIT_FAILURE;
         }
-        return plotfs.addPlot(add_plot) ? EXIT_SUCCESS : EXIT_FAILURE;
+        if (!plotfs.addPlot(add_plot)) {
+            return EXIT_FAILURE;
+        }
+
+        if (remove_source) {
+            try {
+                std::error_code errc;
+                if (!std::filesystem::remove(add_plot, errc)) {
+                    std::cerr << "Could not remove source: " << errc.message() << std::endl;
+                } else {
+                    std::cerr << "Removed " << add_plot << std::endl;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Could not remove source: " << e.what() << std::endl;
+            }
+        }
+        return EXIT_SUCCESS;
     }
 
     if (!remove_plot.empty()) {
