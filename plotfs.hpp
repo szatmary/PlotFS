@@ -256,9 +256,9 @@ public:
 
     bool removeDevice(const std::vector<uint8_t>& dev_id)
     {
-        std::remove_if(geom.devices.begin(), geom.devices.end(), [&](const auto& d) {
+        geom.devices.erase(std::remove_if(geom.devices.begin(), geom.devices.end(), [&](const auto& d){
             return d->id == dev_id;
-        });
+        }), geom.devices.end());
         return save();
     }
 
