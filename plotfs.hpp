@@ -2,7 +2,6 @@
 
 // local headers
 #include "device.hpp"
-#include "file.hpp"
 #include "plot.hpp"
 
 #include "plotfs_generated.h"
@@ -44,26 +43,92 @@ std::string to_string(const flatbuffers::Vector<uint8_t>& data)
     return ss.str();
 }
 
-const static int recovery_point_size = 64; // DONT MODIFY THIS VALUE
-std::array<uint8_t, recovery_point_size> get_recovery_point(uint64_t size, const std::vector<uint8_t>& next_device_id = std::vector<uint8_t>(), uint64_t next_device_offset = 0)
-{
-    std::vector<uint8_t> header;
-    static const auto text = std::string("PlotFS Recovery Point");
-    header.insert(header.end(), text.begin(), text.end());
-    header.push_back(0);
-    header.push_back(recovery_point_size);
-    header.insert(header.end(), { static_cast<uint8_t>(size >> 56), static_cast<uint8_t>(size >> 48), static_cast<uint8_t>(size >> 40), static_cast<uint8_t>(size >> 32), static_cast<uint8_t>(size >> 24), static_cast<uint8_t>(size >> 16), static_cast<uint8_t>(size >> 8), static_cast<uint8_t>(size) });
-    if (next_device_id.size() == 32) {
-        header.insert(header.end(), next_device_id.begin(), next_device_id.end());
-    } else {
-        header.insert(header.end(), 32, 0);
-    }
-    header.insert(header.end(), { static_cast<uint8_t>(next_device_offset >> 56), static_cast<uint8_t>(next_device_offset >> 48), static_cast<uint8_t>(next_device_offset >> 40), static_cast<uint8_t>(next_device_offset >> 32), static_cast<uint8_t>(next_device_offset >> 24), static_cast<uint8_t>(next_device_offset >> 16), static_cast<uint8_t>(next_device_offset >> 8), static_cast<uint8_t>(next_device_offset) });
+class RecoveryPointHeader {
+public:
+    static constexpr std::array<uint8_t, 22> magic { 'P', 'l', 'o', 't', 'F', 'S', ' ', 'R', 'e', 'c', 'o', 'v', 'e', 'r', 'y', ' ', 'P', 'o', 'i', 'n', 't' };
+    static constexpr int recovery_point_version = 64;
+    uint64_t shard_size = 0;
+    std::vector<uint8_t> next_device_id;
+    uint64_t next_device_offset = 0;
 
-    std::array<uint8_t, recovery_point_size> array;
-    std::copy(header.begin(), header.end(), array.begin());
-    return array;
-}
+    static std::unique_ptr<RecoveryPointHeader> read(std::shared_ptr<DeviceHandle> fd)
+    {
+        auto data = fd->read(recovery_point_version);
+        if (data.size() != recovery_point_version) {
+            return nullptr;
+        }
+
+        auto header = std::make_unique<RecoveryPointHeader>();
+        auto signature = std::vector<uint8_t>(data.begin(), data.begin() + magic.size());
+        uint16_t recovery_point_size = static_cast<uint16_t>(data[23]) << 8 | static_cast<uint16_t>(data[24]);
+        header->shard_size = static_cast<uint64_t>(data[23]) << 56 | static_cast<uint64_t>(data[24]) << 48 | static_cast<uint64_t>(data[25]) << 40 | static_cast<uint64_t>(data[26]) << 32 | static_cast<uint64_t>(data[27]) << 24 | static_cast<uint64_t>(data[28]) << 16 | static_cast<uint64_t>(data[29]) << 8 | static_cast<uint64_t>(data[30]);
+        header->next_device_id = std::vector<uint8_t>(data.begin() + 31, data.begin() + 63);
+        header->next_device_offset = static_cast<uint64_t>(data[63]) << 56 | static_cast<uint64_t>(data[64]) << 48 | static_cast<uint64_t>(data[65]) << 40 | static_cast<uint64_t>(data[66]) << 32 | static_cast<uint64_t>(data[67]) << 24 | static_cast<uint64_t>(data[68]) << 16 | static_cast<uint64_t>(data[69]) << 8 | static_cast<uint64_t>(data[70]);
+        if (!std::equal(signature.begin(), signature.end(), magic.begin(), magic.end())) {
+            return nullptr;
+        }
+        if (std::all_of(header->next_device_id.begin(), header->next_device_id.end(), [](uint8_t c) { return c == 0; })) {
+            header->next_device_id.clear();
+        }
+
+        switch (recovery_point_size) {
+        case recovery_point_version:
+            return header;
+        default:
+            return nullptr;
+        }
+    }
+
+    static std::vector<uint8_t> get(uint64_t shard_size, const std::vector<uint8_t>& next_device_id = std::vector<uint8_t>(), uint64_t next_device_offset = 0)
+    {
+        std::vector<uint8_t> header;
+        header.insert(header.end(), magic.begin(), magic.end());
+        header.push_back(0);
+        header.push_back(recovery_point_version);
+        header.insert(header.end(), { static_cast<uint8_t>(shard_size >> 56), static_cast<uint8_t>(shard_size >> 48), static_cast<uint8_t>(shard_size >> 40), static_cast<uint8_t>(shard_size >> 32), static_cast<uint8_t>(shard_size >> 24), static_cast<uint8_t>(shard_size >> 16), static_cast<uint8_t>(shard_size >> 8), static_cast<uint8_t>(shard_size) });
+        if (next_device_id.size() == 32) {
+            header.insert(header.end(), next_device_id.begin(), next_device_id.end());
+        } else {
+            header.insert(header.end(), 32, 0);
+        }
+        header.insert(header.end(), { static_cast<uint8_t>(next_device_offset >> 56), static_cast<uint8_t>(next_device_offset >> 48), static_cast<uint8_t>(next_device_offset >> 40), static_cast<uint8_t>(next_device_offset >> 32), static_cast<uint8_t>(next_device_offset >> 24), static_cast<uint8_t>(next_device_offset >> 16), static_cast<uint8_t>(next_device_offset >> 8), static_cast<uint8_t>(next_device_offset) });
+        header.resize(recovery_point_version);
+        return header;
+    }
+};
+
+// bool read_recovery_point(const std::string dev_path, uint64_t offset)
+// {
+//     std::array<uint8_t, recovery_point_size> array;
+//     auto fd = FileHandle::open(dev_path);
+//     if (!fd) {
+//         return false;
+//     }
+//     auto sig = fd->read(offset, array.size());
+//     auto plot_id = fd->read(offset + 23, 8);
+//     auto next_device_id = fd->read(offset + 31, 32);
+//     auto next_device_offset = fd->read(offset + 63, 8);
+
+// if (!fd->seek(offset)) {
+//     return false;
+// }
+// if (!fd->read(array.data(), array.size()) != array.size()) {
+//     return false;
+// }
+// if (array[0] != 'P' || array[1] != 'l' || array[2] != 'o' || array[3] != 't' || array[4] != 'F' || array[5] != 'S' || array[6] != ' ' || array[7] != 'R' || array[8] != 'e' || array[9] != 'c' || array[10] != 'o' || array[11] != 'v' || array[12] != 'e' || array[13] != 'r' || array[14] != 'y' || array[15] != ' ' || array[16] != 'P' || array[17] != 'o' || array[18] != 'i' || array[19] != 'n' || array[20] != 't') {
+//     return false;
+// }
+
+// if (::lseek64(fd, offset, SEEK_SET) != offset) {
+//     ::close(fd);
+//     throw std::runtime_error("failed to seek to recovery point");
+// }
+// if (::read(fd, array.data(), array.size()) != array.size()) {
+//     ::close(fd);
+//     throw std::runtime_error("failed to read recovery point");
+// }
+// ::close(fd);
+// }
 
 class PlotFS {
 private:
@@ -370,6 +435,7 @@ public:
         // including the recovery point header
         std::vector<free_shard> reserved_space;
         auto space_needed = static_cast<uint64_t>(plot_stat.st_size);
+        const auto recovery_point_size = RecoveryPointHeader::recovery_point_version;
         for (const auto& shard : freespace) {
             if (space_needed == 0) {
                 break;
@@ -426,7 +492,7 @@ public:
             reserved_space.erase(reserved_space.begin());
             auto next_device_id = reserved_space.empty() ? std::vector<uint8_t>() : reserved_space.front().device->id();
             auto next_shard_offset = reserved_space.empty() ? 0 : reserved_space.front().begin;
-            auto recovery_point = get_recovery_point(shard_size - recovery_point_size, next_device_id, next_shard_offset);
+            auto recovery_point = RecoveryPointHeader::get(shard_size - recovery_point_size, next_device_id, next_shard_offset);
             if (!device->seek(device_offset)) {
                 removePlot(plot_file->id());
                 return false;
@@ -466,4 +532,58 @@ public:
         g->geom->UnPackTo(&geom);
         return clearPlotFlags(plot_file->id(), PlotFlags_Reserved);
     }
+
+    bool recoverFs(std::vector<std::string> paths)
+    {
+        GeometryT newGeom;
+        std::unordered_map<std::vector<uint8_t>, std::shared_ptr<DeviceHandle>> devices;
+
+        // first just open all the devices
+        for (const auto dev_path : paths) {
+            auto device = DeviceHandle::open(dev_path);
+            if (!device) {
+                std::cerr << "failed to open device " << dev_path << ", skipping" << std::endl;
+                continue;
+            }
+
+            auto& d = geom.devices.emplace_back();
+            d->path = dev_path;
+            d->id = device->id();
+            d->begin = device->begin();
+            d->end = device->end();
+            devices.emplace(d->id, std::move(device));
+        }
+
+        for (auto& device : devices) {
+            device.second->seek(1024);
+            auto recovery_point = RecoveryPointHeader::read(device.second);
+            if (!recovery_point) {
+                std::cerr << "failed to read recovery point header" << std::endl;
+                continue;
+            }
+            if (recovery_point->next_device_id.empty()) {
+
+                // std::cerr << "no next device id in recovery point header" << std::endl;
+                // continue;
+            }
+            // if (recovery_point-> != RecoveryPointHeader::recovery_point_version) {
+            //     std::cerr << "recovery point version mismatch, skipping" << std::endl;
+            //     continue;
+            // }
+        }
+    }
+
+    // bool importDevice(const std::string& dev_path)
+    // {
+    //     auto device = DeviceHandle::open(dev_path);
+    //     if (device) {
+    //         auto device_it = std::find_if(geom.devices.begin(), geom.devices.end(), [&](const auto& d) {
+    //             return !!d && d->id == device->id();
+    //         });
+    //         if (device_it != geom.devices.end()) {
+    //             std::cerr << "device already exists" << std::endl;
+    //             return false;
+    //         }
+    //     }
+    // }
 };

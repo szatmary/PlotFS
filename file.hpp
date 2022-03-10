@@ -10,6 +10,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <vector>
 
 class FileHandle {
 private:
@@ -97,5 +98,26 @@ public:
         auto fd = fd_;
         fd_ = -1;
         return fd;
+    }
+
+    std::vector<uint8_t> read(size_t size)
+    {
+        std::vector<uint8_t> buffer(size);
+        if (read(buffer.data(), size) != size) {
+            return std::vector<uint8_t>();
+        }
+        return buffer;
+    }
+
+    std::vector<uint8_t> read(off64_t offset, size_t size)
+    {
+        std::vector<uint8_t> buffer(size);
+        if (seek(offset) < 0) {
+            return std::vector<uint8_t>();
+        }
+        if (read(buffer.data(), size) != size) {
+            return std::vector<uint8_t>();
+        }
+        return buffer;
     }
 };

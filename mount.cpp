@@ -86,6 +86,7 @@ static const std::vector<shard_data> get_plot_data(const std::vector<uint8_t>& p
     };
 
     std::vector<shard_data> shards;
+    const auto recovery_point_size = RecoveryPointHeader::recovery_point_version;
     for (const auto plot : *g->geom->plots()) {
         if (*plot->id() == plot_id) {
             if (!plot->shards()) {
