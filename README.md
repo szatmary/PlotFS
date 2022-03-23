@@ -34,7 +34,6 @@ It doesn't care about:
 * Rendundancy
 * Convenience
 * Windows
-* Humans in general
 
 ### Installing
 
