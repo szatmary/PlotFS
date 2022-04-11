@@ -71,6 +71,9 @@ public:
     static std::shared_ptr<DeviceHandle> open(const std::string& path, int mode = O_RDONLY)
     {
         auto fd = FileHandle::open(path, mode);
+        if (!fd) {
+            return nullptr;
+        }
         static std::array<uint8_t, 512> first_block;
         if (first_block.size() != fd->read(first_block.data(), first_block.size())) {
             std::cerr << "Error: Failed to read first block of " << path << std::endl;

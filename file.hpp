@@ -59,6 +59,7 @@ public:
         return st;
     }
     uint64_t size() const { return stat().st_size; }
+    off64_t tell() const { return ::lseek64(fd_, 0, SEEK_CUR); }
     bool seek(off64_t offset) { return offset == ::lseek64(fd_, offset, SEEK_SET); }
     bool truncate(off64_t offset = 0) { return 0 == ::ftruncate(fd_, offset); }
     bool lock(int operation) { return 0 == ::flock(fd_, operation); }

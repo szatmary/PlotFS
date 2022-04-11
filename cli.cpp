@@ -23,7 +23,8 @@ int main(int argc, char** argv)
     bool init = false;
     auto init_opt = app.add_flag("--init", init, "Initlize a new plotfs.bin file");
 
-    std::string add_device, remove_device, add_plot, remove_plot;
+    std::vector<std::string> add_plot;
+    std::string add_device, remove_device, remove_plot;
     auto add_device_opt = app.add_option("--add_device", add_device, "Add a device or partition");
     auto remove_device_opt = app.add_option("--remove_device", remove_device, "Rempove a device or partition");
     auto add_plot_opt = app.add_option("--add_plot", add_plot, "Add a plot");
@@ -36,6 +37,9 @@ int main(int argc, char** argv)
     bool force = false, remove_source = false;
     bool force_opt = app.add_flag("--force", force, "Force operation");
     auto remove_source_opt = app.add_flag("--remove_source", remove_source, "Removes source plot file after adding");
+
+    std::vector<std::string> recover;
+    auto recover_opt = app.add_option("--recover", recover, "");
 
     init_opt->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(list_devices_opt);
 
@@ -132,20 +136,22 @@ int main(int argc, char** argv)
             std::cerr << "Could not open plotfs" << std::endl;
             return EXIT_FAILURE;
         }
-        if (!plotfs.addPlot(add_plot)) {
-            return EXIT_FAILURE;
-        }
+        for (const auto& plot_pah : add_plot) {
+            if (!plotfs.addPlot(plot_pah)) {
+                return EXIT_FAILURE;
+            }
 
-        if (remove_source) {
-            try {
-                std::error_code errc;
-                if (!std::filesystem::remove(add_plot, errc)) {
-                    std::cerr << "Could not remove source: " << errc.message() << std::endl;
-                } else {
-                    std::cerr << "Removed " << add_plot << std::endl;
+            if (remove_source) {
+                try {
+                    std::error_code errc;
+                    if (!std::filesystem::remove(plot_pah, errc)) {
+                        std::cerr << "Could not remove source: " << errc.message() << std::endl;
+                    } else {
+                        std::cerr << "Removed " << plot_pah << std::endl;
+                    }
+                } catch (const std::exception& e) {
+                    std::cerr << "Could not remove source: " << e.what() << std::endl;
                 }
-            } catch (const std::exception& e) {
-                std::cerr << "Could not remove source: " << e.what() << std::endl;
             }
         }
         return EXIT_SUCCESS;
@@ -159,5 +165,10 @@ int main(int argc, char** argv)
             return EXIT_FAILURE;
         }
         return plotfs.removePlot(plot_id) ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+
+    if (!recover.empty()) {
+        PlotFS::recoverFs(recover);
+            return EXIT_FAILURE;
     }
 }
