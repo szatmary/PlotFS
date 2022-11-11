@@ -79,6 +79,7 @@ public:
 
         // check signature
         if (DeviceSignature != std::string(first_block.begin(), first_block.begin() + DeviceSignature.size())) {
+            std::cerr << "warning: missing device signature: " << path << std::endl;
             return nullptr;
         }
 

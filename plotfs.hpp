@@ -299,7 +299,7 @@ public:
             // Make sure we can open the device
             auto dh = DeviceHandle::open(device->path, O_RDWR);
             if (!dh) {
-                std::cerr << "warning: failed to open device: " << *device->path.c_str() << std::endl;
+                std::cerr << "warning: failed to open device: " << to_string(device->id) << " at " << device->path << std::endl;
                 continue;
             }
             freespace.push_back(free_shard { dh->begin(), dh->end(), dh, std::make_shared<uint64_t>(dh->end() - dh->begin()) });
