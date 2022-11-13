@@ -262,6 +262,19 @@ public:
         return save();
     }
 
+    bool fixDevice(const std::vector<uint8_t>& dev_id)
+    {
+        auto device = std::find_if(geom.devices.begin(), geom.devices.end(), [&](const auto& d){
+            return d->id == dev_id;
+        });
+        if(device == std::end(geom.devices)) {
+            std::cerr << "device not found: " << to_string(dev_id) << std::endl;
+            return false;
+        }
+        std::cerr << "Fixing signature of " << to_string(dev_id) << " at " << device->get()->path << std::endl;
+        return DeviceHandle::format(device->get()->path, dev_id) != nullptr;
+    }
+
     bool addPlot(const std::string& plot_path)
     {
         if (geom.devices.empty()) {
