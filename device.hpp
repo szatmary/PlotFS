@@ -72,7 +72,7 @@ public:
         return std::make_shared<DeviceHandle>(fd->release(), begin, end, dev_id);
     }
 
-    static std::shared_ptr<DeviceHandle> open(const std::string& path, int mode = O_RDONLY)
+    static std::shared_ptr<DeviceHandle> open(const std::string& path, bool require_signature = false, int mode = O_RDONLY)
     {
         auto fd = FileHandle::open(path, mode);
         static std::array<uint8_t, 512> first_block;
@@ -83,7 +83,9 @@ public:
 
         // check signature
         if (DeviceSignature != std::string(first_block.begin(), first_block.begin() + DeviceSignature.size())) {
-            std::cerr << "warning: missing device signature: " << path << std::endl;
+            if(require_signature) {
+                std::cerr << "Error: Missing device signature for " << path << std::endl;
+            }
             return nullptr;
         }
 
@@ -94,6 +96,7 @@ public:
         auto end = static_cast<uint64_t>(first_block[256 + 32 + 8]) << 56 | static_cast<uint64_t>(first_block[256 + 32 + 9]) << 48 | static_cast<uint64_t>(first_block[256 + 32 + 10]) << 40 | static_cast<uint64_t>(first_block[256 + 32 + 11]) << 32
             | static_cast<uint64_t>(first_block[256 + 32 + 12]) << 24 | static_cast<uint64_t>(first_block[256 + 32 + 13]) << 16 | static_cast<uint64_t>(first_block[256 + 32 + 14]) << 8 | static_cast<uint64_t>(first_block[256 + 32 + 15]);
         if (begin > end) {
+            std::cerr << "Error: Invalid device signature for " << path << "begin > end" << std::endl;
             return nullptr;
         }
 

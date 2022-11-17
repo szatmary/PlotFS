@@ -310,10 +310,13 @@ public:
         std::vector<free_shard> freespace;
         for (const auto& device : geom.devices) {
             // Make sure we can open the device
-            auto dh = DeviceHandle::open(device->path, O_RDWR);
+            auto dh = DeviceHandle::open(device->path, true, O_RDWR);
             if (!dh) {
                 std::cerr << "warning: failed to open device: " << to_string(device->id) << " at " << device->path << std::endl;
                 continue;
+            }
+            if(dh->id() != device->id) {
+                std::cerr << "warning: wrong device id for " << device->path << " expected " << to_string(device->id) << " but was " << to_string(dh->id()) << std::endl;
             }
             freespace.push_back(free_shard { dh->begin(), dh->end(), dh, std::make_shared<uint64_t>(dh->end() - dh->begin()) });
         }
