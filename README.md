@@ -6,7 +6,7 @@ PlotFS is not a traditional filesystem. It is mounted read only for farming/harv
 PlotFS writes plot files directly and contiguously to raw block devices, partitions, or files.
 Metadata, such as, file offsets and size are recorded in a separate "geometry" file which is stored on the OS drive. Plots can be split into "shards" and spread across multiple disks to achieve maximum storage density.
 
-Please consider dontating:
+Please consider donating:
 
     xch1hsyyclxn2v59ysd4n8nk577sduw64sg90nr8z26c3h8emq7magdqqzq9n5
 
