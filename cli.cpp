@@ -24,9 +24,10 @@ int main(int argc, char** argv)
     auto init_opt = app.add_flag("--init", init, "Initlize a new plotfs.bin file");
 
     std::vector<std::string> add_plot;
-    std::string add_device, remove_device, remove_plot;
+    std::string add_device, remove_device, fix_device, remove_plot;
     auto add_device_opt = app.add_option("--add_device", add_device, "Add a device or partition");
     auto remove_device_opt = app.add_option("--remove_device", remove_device, "Rempove a device or partition");
+    auto fix_device_opt = app.add_option("--fix_device", fix_device, "Fix the signature of a device or partition");
     auto add_plot_opt = app.add_option("--add_plot", add_plot, "Add a plot");
     auto remove_plot_opt = app.add_option("--remove_plot", remove_plot, "Remove a plot");
 
@@ -40,13 +41,14 @@ int main(int argc, char** argv)
 
     init_opt->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(list_devices_opt);
 
-    add_device_opt->excludes(remove_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(list_devices_opt)->excludes(init_opt);
-    remove_device_opt->excludes(add_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(list_devices_opt)->excludes(init_opt);
-    add_plot_opt->excludes(remove_plot_opt)->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(list_plots_opt)->excludes(list_devices_opt)->excludes(init_opt);
-    remove_plot_opt->excludes(add_plot_opt)->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(list_plots_opt)->excludes(list_devices_opt)->excludes(init_opt);
+    add_device_opt->excludes(remove_device_opt)->excludes(fix_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(list_devices_opt)->excludes(init_opt);
+    remove_device_opt->excludes(add_device_opt)->excludes(fix_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(list_devices_opt)->excludes(init_opt);
+    fix_device_opt->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(list_devices_opt)->excludes(init_opt);
+    add_plot_opt->excludes(remove_plot_opt)->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(fix_device_opt)->excludes(list_plots_opt)->excludes(list_devices_opt)->excludes(init_opt);
+    remove_plot_opt->excludes(add_plot_opt)->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(fix_device_opt)->excludes(list_plots_opt)->excludes(list_devices_opt)->excludes(init_opt);
 
-    list_plots_opt->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_devices_opt)->excludes(init_opt); //->excludes(force_opt);
-    list_devices_opt->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(init_opt); //->excludes(force_opt);
+    list_plots_opt->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(fix_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_devices_opt)->excludes(init_opt); //->excludes(force_opt);
+    list_devices_opt->excludes(add_device_opt)->excludes(remove_device_opt)->excludes(fix_device_opt)->excludes(add_plot_opt)->excludes(remove_plot_opt)->excludes(list_plots_opt)->excludes(init_opt); //->excludes(force_opt);
     CLI11_PARSE(app, argc, argv);
 
     if (init) {
@@ -125,6 +127,16 @@ int main(int argc, char** argv)
             return EXIT_FAILURE;
         }
         return plotfs.removeDevice(device_id) ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    
+    if(!fix_device.empty()) {
+        auto device_id = to_vector(fix_device);
+        PlotFS plotfs(config_path);
+        if (!plotfs.isOpen()) {
+            std::cerr << "Could not open plotfs" << std::endl;
+            return EXIT_FAILURE;
+        }
+        return plotfs.fixDevice(device_id) ? EXIT_SUCCESS : EXIT_FAILURE;
     }
 
     if (!add_plot.empty()) {

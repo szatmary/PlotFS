@@ -28,6 +28,19 @@ public:
 
     static std::shared_ptr<DeviceHandle> format(const std::string& path)
     {
+        // generate 32 byte random id
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_int_distribution<uint64_t> dist(0, 255);
+        auto id = std::vector<uint8_t>(32);
+        for (auto& i : id) {
+            i = dist(mt);
+        }
+        return format(path, id);
+    }
+
+    static std::shared_ptr<DeviceHandle> format(const std::string& path, const std::vector<uint8_t>& dev_id)
+    {
         auto fd = FileHandle::open(path, O_RDWR);
         if (!fd) {
             std::cerr << "Failed to open device: " << path << std::endl;
@@ -41,16 +54,7 @@ public:
 
         static std::array<uint8_t, 512 * 2> first_block {}; // wipe gpt header
         std::copy(DeviceSignature.begin(), DeviceSignature.end(), first_block.begin());
-
-        // generate 32 byte random id
-        std::random_device rd;
-        std::mt19937 mt(rd());
-        std::uniform_int_distribution<uint64_t> dist(0, 255);
-        auto id = std::vector<uint8_t>(32);
-        for (auto& i : id) {
-            i = dist(mt);
-        }
-        std::copy(id.begin(), id.end(), first_block.begin() + 256);
+        std::copy(dev_id.begin(), dev_id.end(), first_block.begin() + 256);
 
         auto begin = static_cast<uint64_t>(512 * 2);
         first_block[256 + 32] = static_cast<uint8_t>(begin >> 56), first_block[256 + 32 + 1] = static_cast<uint8_t>(begin >> 48), first_block[256 + 32 + 2] = static_cast<uint8_t>(begin >> 40), first_block[256 + 32 + 3] = static_cast<uint8_t>(begin >> 32);
@@ -65,10 +69,10 @@ public:
         if (!fd->sync()) {
             return nullptr;
         }
-        return std::make_shared<DeviceHandle>(fd->release(), begin, end, id);
+        return std::make_shared<DeviceHandle>(fd->release(), begin, end, dev_id);
     }
 
-    static std::shared_ptr<DeviceHandle> open(const std::string& path, int mode = O_RDONLY)
+    static std::shared_ptr<DeviceHandle> open(const std::string& path, bool require_signature = false, int mode = O_RDONLY)
     {
         auto fd = FileHandle::open(path, mode);
         static std::array<uint8_t, 512> first_block;
@@ -79,6 +83,9 @@ public:
 
         // check signature
         if (DeviceSignature != std::string(first_block.begin(), first_block.begin() + DeviceSignature.size())) {
+            if(require_signature) {
+                std::cerr << "Error: Missing device signature for " << path << std::endl;
+            }
             return nullptr;
         }
 
@@ -89,6 +96,7 @@ public:
         auto end = static_cast<uint64_t>(first_block[256 + 32 + 8]) << 56 | static_cast<uint64_t>(first_block[256 + 32 + 9]) << 48 | static_cast<uint64_t>(first_block[256 + 32 + 10]) << 40 | static_cast<uint64_t>(first_block[256 + 32 + 11]) << 32
             | static_cast<uint64_t>(first_block[256 + 32 + 12]) << 24 | static_cast<uint64_t>(first_block[256 + 32 + 13]) << 16 | static_cast<uint64_t>(first_block[256 + 32 + 14]) << 8 | static_cast<uint64_t>(first_block[256 + 32 + 15]);
         if (begin > end) {
+            std::cerr << "Error: Invalid device signature for " << path << "begin > end" << std::endl;
             return nullptr;
         }
 

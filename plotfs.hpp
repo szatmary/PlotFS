@@ -262,6 +262,19 @@ public:
         return save();
     }
 
+    bool fixDevice(const std::vector<uint8_t>& dev_id)
+    {
+        auto device = std::find_if(geom.devices.begin(), geom.devices.end(), [&](const auto& d){
+            return d->id == dev_id;
+        });
+        if(device == std::end(geom.devices)) {
+            std::cerr << "device not found: " << to_string(dev_id) << std::endl;
+            return false;
+        }
+        std::cerr << "Fixing signature of " << to_string(dev_id) << " at " << device->get()->path << std::endl;
+        return DeviceHandle::format(device->get()->path, dev_id) != nullptr;
+    }
+
     bool addPlot(const std::string& plot_path)
     {
         if (geom.devices.empty()) {
@@ -297,10 +310,13 @@ public:
         std::vector<free_shard> freespace;
         for (const auto& device : geom.devices) {
             // Make sure we can open the device
-            auto dh = DeviceHandle::open(device->path, O_RDWR);
+            auto dh = DeviceHandle::open(device->path, true, O_RDWR);
             if (!dh) {
-                std::cerr << "warning: failed to open device: " << *device->path.c_str() << std::endl;
+                std::cerr << "warning: failed to open device: " << to_string(device->id) << " at " << device->path << std::endl;
                 continue;
+            }
+            if(dh->id() != device->id) {
+                std::cerr << "warning: wrong device id for " << device->path << " expected " << to_string(device->id) << " but was " << to_string(dh->id()) << std::endl;
             }
             freespace.push_back(free_shard { dh->begin(), dh->end(), dh, std::make_shared<uint64_t>(dh->end() - dh->begin()) });
         }
