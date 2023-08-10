@@ -9,16 +9,25 @@
 
 static const std::string DeviceSignature = "PlotFS\nby: Matthew Szatmary <matt@szatmary.org> (@m3u8)\nDonate Chia to: xch1hsyyclxn2v59ysd4n8nk577sduw64sg90nr8z26c3h8emq7magdqqzq9n5\n";
 
-class DeviceHandle : public FileHandle {
+// Abstract device interface
+class IDevice {
+public:
+    virtual ~IDevice() = default;
+    virtual uint64_t begin() const = 0;
+    virtual uint64_t end() const = 0;
+    virtual const std::vector<uint8_t>& id() const = 0;
+};
+
+class DeviceHandle : public FileHandle, public IDevice {
 private:
     uint64_t begin_ = 0;
     uint64_t end_ = 0;
     std::vector<uint8_t> id_;
 
 public:
-    uint64_t begin() const { return begin_; }
-    uint64_t end() const { return end_; }
-    const std::vector<uint8_t>& id() const { return id_; }
+    uint64_t begin() const override { return begin_; }
+    uint64_t end() const override { return end_; }
+    const std::vector<uint8_t>& id() const override { return id_; }
 
     DeviceHandle(int fd, uint64_t begin, uint64_t end, const std::vector<uint8_t>& id)
         : FileHandle(fd)
@@ -102,4 +111,45 @@ public:
 
         return std::make_shared<DeviceHandle>(fd->release(), begin, end, id);
     }
+};
+
+class DirectoryDevice : public IDevice {
+private:
+    uint64_t begin_ = 0;
+    uint64_t end_ = 0;
+    std::vector<uint8_t> id_;
+    std::string path_; // Path to the directory
+
+    // Helper method to calculate the total size of all files in the directory
+    uint64_t calculateDirectorySize(const std::string& path) {
+        uint64_t totalSize = 0;
+        for (const auto & entry : std::filesystem::directory_iterator(path)) {
+            if (entry.is_regular_file()) {
+                totalSize += entry.file_size();
+            }
+        }
+        return totalSize;
+    }
+
+public:
+    DirectoryDevice(const std::string& path) : path_(path) {
+        // Set begin to 0 for directories
+        begin_ = 0;
+
+        // Calculate the total size of the directory
+        end_ = calculateDirectorySize(path);
+
+        // Generate a random 32-byte ID for the directory
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_int_distribution<uint64_t> dist(0, 255);
+        id_.resize(32);
+        for (auto& i : id_) {
+            i = dist(mt);
+        }
+    }
+
+    uint64_t begin() const override { return begin_; }
+    uint64_t end() const override { return end_; }
+    const std::vector<uint8_t>& id() const override { return id_; }
 };
