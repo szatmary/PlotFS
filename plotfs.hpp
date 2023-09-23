@@ -220,18 +220,21 @@ public:
 
     bool addDevice(const std::string& dev_path, bool force)
     {
-        auto device = DeviceHandle::open(dev_path);
+        auto existing = std::find_if(geom.devices.begin(), geom.devices.end(), [&](const auto& d) {
+            if (d->path == dev_path) {
+                return true;
+            }
+            return false;
+        });
+        if(existing != geom.devices.end()) {
+            std::cerr << "A device (" << to_string((*existing)->id) << ") is already registered path " << dev_path << "." <<  std::endl;
+            std::cerr << "Remove the existing device if you want to add a different one at the same path. " <<  std::endl;
+            return false;
+        }
+        auto device = DeviceHandle::open(dev_path, true);
         if (device) {
-            int found = 0;
-            std::remove_if(geom.devices.begin(), geom.devices.end(), [&](const auto& d) {
-                if (d->path == dev_path) {
-                    found++;
-                    return true;
-                }
-                return false;
-            });
-            if (found == 0 && !force) {
-                std::cerr << "This looks like a PlotFS partition, but it is not registered." << std::endl;
+            if (!force) {
+                std::cerr << "This looks like a PlotFS partition. Use --force if you want to reset and add it." << std::endl;
                 return false;
             }
             device.reset();
