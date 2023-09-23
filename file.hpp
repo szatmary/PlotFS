@@ -23,7 +23,7 @@ public:
     {
         auto fd = ::open(path.c_str(), flags, mode);
         if (fd < 0) {
-            std::cerr << "Failed to open " << path << " " << strerror(errno) << std::endl;
+            std::cerr << "ERROR: Failed to open " << path << " " << strerror(errno) << std::endl;
             return nullptr;
         }
         return std::make_shared<FileHandle>(fd);

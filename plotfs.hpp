@@ -89,7 +89,7 @@ private:
         fd->sync();
         return true;
     }
-
+    
 public:
     struct GeometryRO {
         std::vector<uint8_t> buffer;
@@ -303,25 +303,48 @@ public:
             }
         }
 
+        class DeviceInitializer {
+            private:
+                DeviceT device;
+                std::shared_ptr<DeviceHandle> handle;
+            public:
+                DeviceInitializer(DeviceT d) : device(d) {}
+                
+                std::string path() { return device.path; }
+                const std::vector<uint8_t>& id() const { return device.id; }
+
+                std::shared_ptr<DeviceHandle> loadHandle() {
+                    if(!handle) {
+                        std::cout << "Loadind device handle for " << path() << "..." << std::endl;
+                        std::shared_ptr<DeviceHandle> dh = DeviceHandle::open(device.path, true, O_RDWR);
+                        if (!dh) {
+                            std::cerr << "ERROR: Failed to open device: " << to_string(device.id) << " at " << device.path << std::endl;
+                        } else if(dh->id() != device.id) {
+                            std::cerr << "ERROR: Wrong device id for " << device.path << " expected " << to_string(device.id) << " but was " << to_string(dh->id()) << std::endl;
+                        } else {
+                            handle = dh;
+                        }
+                    }
+
+                    return handle;
+                }
+                
+                bool isAccessible() {
+                    return !!loadHandle();
+                }
+        };
+
         struct free_shard {
             uint64_t begin;
             uint64_t end;
-            std::shared_ptr<DeviceHandle> device;
             std::shared_ptr<uint64_t> device_free;
+            std::shared_ptr<DeviceInitializer> device;
         };
 
         std::vector<free_shard> freespace;
         for (const auto& device : geom.devices) {
-            // Make sure we can open the device
-            auto dh = DeviceHandle::open(device->path, true, O_RDWR);
-            if (!dh) {
-                std::cerr << "warning: failed to open device: " << to_string(device->id) << " at " << device->path << std::endl;
-                continue;
-            }
-            if(dh->id() != device->id) {
-                std::cerr << "warning: wrong device id for " << device->path << " expected " << to_string(device->id) << " but was " << to_string(dh->id()) << std::endl;
-            }
-            freespace.push_back(free_shard { dh->begin(), dh->end(), dh, std::make_shared<uint64_t>(dh->end() - dh->begin()) });
+            freespace.push_back(
+                free_shard { device->begin, device->end, std::make_shared<uint64_t>(device->end - device->end), std::make_shared<DeviceInitializer>(DeviceInitializer(*device))});
         }
 
         // Caclulate the free space runs in the pool by assuming every device is empty
@@ -348,13 +371,13 @@ public:
                     // shard:         |----|
                     // freeblock:     |-----------|
                     // new freeblock:      |------|
-                    freespace.push_back(free_shard { shard->end, freeblock.end, freeblock.device, freeblock.device_free });
+                    freespace.push_back(free_shard { shard->end, freeblock.end, freeblock.device_free, freeblock.device });
                 }
                 if (shard->begin > freeblock.begin) {
                     // shard:                |----|
                     // freeblock:     |-----------|
                     // new freeblock: |------|
-                    freespace.push_back(free_shard { freeblock.begin, shard->begin, freeblock.device, freeblock.device_free });
+                    freespace.push_back(free_shard { freeblock.begin, shard->begin, freeblock.device_free, freeblock.device });
                 }
             }
         }
@@ -385,25 +408,40 @@ public:
         //     freespace = fragmented;
         // }
 
-        // iterate over the freeruns until we find enough combined space to fit the plot
-        // including the recovery point header
-        std::vector<free_shard> reserved_space;
-        auto space_needed = static_cast<uint64_t>(plot_stat.st_size);
-        for (const auto& shard : freespace) {
-            if (space_needed == 0) {
-                break;
+        
+        auto reserveSpace = [](std::vector<free_shard> freespace, std::vector<free_shard>* reserved_space, int plot_size) {
+            
+            auto space_needed = static_cast<uint64_t>(plot_size);
+            for (const auto& shard : freespace) {
+                if (space_needed == 0) {
+                    break;
+                }
+                auto reserved_size = std::min(space_needed + recovery_point_size, shard.end - shard.begin);
+                if (reserved_size <= recovery_point_size) {
+                    continue;
+                }
+                //Quick check without loading devices
+                if(reserved_space && !shard.device->isAccessible()) {
+                    continue;
+                }
+                //Do actual reservation
+                if(reserved_space) {
+                    reserved_space->push_back({ shard.begin, shard.begin + reserved_size, 0, shard.device });
+                }
+                space_needed -= (reserved_size - recovery_point_size);
             }
-            auto reserved_size = std::min(space_needed + recovery_point_size, shard.end - shard.begin);
-            if (reserved_size <= recovery_point_size) {
-                continue;
-            }
-            reserved_space.push_back({ shard.begin, shard.begin + reserved_size, shard.device });
-            space_needed -= (reserved_size - recovery_point_size);
+            return space_needed;
+        };
+        
+        if(reserveSpace(freespace, nullptr, plot_stat.st_size) > 0) {
+            std::cerr << "not enough free space to fit plot" << std::endl;
+            return false;   
         }
 
-        if (space_needed > 0) {
+        std::vector<free_shard> reserved_space;
+        if(reserveSpace(freespace, &reserved_space, plot_stat.st_size) > 0) {
             std::cerr << "not enough free space to fit plot" << std::endl;
-            return false;
+            return false;   
         }
 
         // we are done with the freespace vector, clear it so unused file handles will be closed
@@ -439,7 +477,7 @@ public:
         std::cerr << "starting plot copy to " << reserved_space.size() << " shard(s)" << std::endl;
         off64_t off_in = 0; // position of input file
         while (!reserved_space.empty()) {
-            auto device = reserved_space.front().device;
+            auto device = reserved_space.front().device->loadHandle();
             auto device_offset = reserved_space.front().begin;
             auto shard_size = reserved_space.front().end - reserved_space.front().begin;
             reserved_space.erase(reserved_space.begin());
