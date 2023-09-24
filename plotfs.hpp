@@ -412,7 +412,7 @@ public:
         // }
 
         
-        auto reserveSpace = [](std::vector<free_shard> freespace, std::vector<free_shard>* reserved_space, int plot_size) {
+        auto reserveSpace = [](std::vector<free_shard> freespace, std::vector<free_shard> *reserved_space, long plot_size) {
             
             auto space_needed = static_cast<uint64_t>(plot_size);
             for (const auto& shard : freespace) {
@@ -447,6 +447,13 @@ public:
             return false;   
         }
 
+        for (const auto& reserved : reserved_space) {
+            auto s = std::make_unique<ShardT>();
+            s->device_id = reserved.device->id();
+            s->begin = reserved.begin;
+            s->end = reserved.end;
+        }
+
         // we are done with the freespace vector, clear it so unused file handles will be closed
         freespace.clear();
 
@@ -457,6 +464,7 @@ public:
             s->device_id = reserved.device->id();
             s->begin = reserved.begin;
             s->end = reserved.end;
+            std::cout << "Shard " << s->begin << " " << s-> end << std::endl;
             shards.emplace_back(std::move(s));
         }
 
@@ -513,6 +521,11 @@ public:
                 shard_size -= bytes_written;
             }
             std::cerr << int(100 * off_in / plot_stat.st_size) << "% finished writing to device " << to_string(device->id()) << std::endl;
+        }
+
+        if(off_in < plot_stat.st_size) {
+            std::cerr << "Unexpected error: Plot write finished with " << off_in << " of " << plot_stat.st_size << " bytes written." << std::endl;
+            return false;
         }
 
         // Finished writing, clear the reserved flag
