@@ -315,13 +315,16 @@ public:
 
                 std::shared_ptr<DeviceHandle> loadHandle() {
                     if(!handle) {
-                        std::cout << "Loadind device handle for " << path() << "..." << std::endl;
+                        std::cout << "Loadind device handle for " << path() << "...";
                         std::shared_ptr<DeviceHandle> dh = DeviceHandle::open(device.path, true, O_RDWR);
                         if (!dh) {
+                            std::cout << std::endl;
                             std::cerr << "ERROR: Failed to open device: " << to_string(device.id) << " at " << device.path << std::endl;
                         } else if(dh->id() != device.id) {
+                            std::cout << std::endl;
                             std::cerr << "ERROR: Wrong device id for " << device.path << " expected " << to_string(device.id) << " but was " << to_string(dh->id()) << std::endl;
                         } else {
+                            std::cout << " Done." << std::endl;
                             handle = dh;
                         }
                     }
